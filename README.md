@@ -8,3 +8,4 @@ We aim to release the training and evaluation partitions of DynaVessel in the sh
 
 Please download the pretrained models from Google Drive: [link](https://drive.google.com/open?id=1uFTrSajk2oAx4LHctZB_0cg98Ubo1QJ-&usp=drive_fs)
 
+(More detailed instructions will be posted after the MICCAI deadline on Feb 26, apologies!)
