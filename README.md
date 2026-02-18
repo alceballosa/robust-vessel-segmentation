@@ -29,3 +29,5 @@ bash run_segmentation.sh <input_folder> <output_folder> <num_gpus>
 ```
 
 The pipeline will automatically use the specified number of GPUs to process the scans in parallel. The output will be saved in the specified output folder.
+
+(More detailed instructions will be posted after the MICCAI deadline on Feb 26, apologies!)
