@@ -1,4 +1,4 @@
-# Robust vessel segmentation using Dynamic 4D-CTA
+# Robust brain vessel segmentation in 3D CTA using Dynamic 4D-CTA data
 
 This repository contains code for our paper on training robust vessel segmentation models using Dynamic 4D-CTA data. For now, we provide code for inference using models trained on TopCoW, VesselVerse, and our DynaVessel dataset, as well as evaluation scripts and visualization tools. The model trained on DynaVessel is subject to the specified license in the CC-BY-NC-SA 4.0 file; models trained on other datasets are subject to the licenses of those datasets.
 
