@@ -4,6 +4,13 @@ This repository contains code for our paper on training robust vessel segmentati
 
 We aim to release the training and evaluation partitions of DynaVessel in the short term, but it depends obtaining institutional approval from the hospital network from which we sourced the data.
 
+## Citing us
+
+If you find our work useful, please cite our preprint:
+
+Alberto Mario Ceballos-Arroyo, Shrikanth M. Yadav, Chu-Hsuan Lin, Jisoo Kim, Geoffrey S. Young, Lei Qin, Huaizu Jiang. 2026.
+Robust automatic brain vessel segmentation in 3D CTA scans using dynamic 4D-CTA data. <https://arxiv.org/abs/2602.00391>
+
 ## Setting up weights and other required files
 
 Please download the pretrained models, registration templates, and the Linux executable of ANTS from Google Drive: [link](https://drive.google.com/open?id=1uFTrSajk2oAx4LHctZB_0cg98Ubo1QJ-&usp=drive_fs)
@@ -20,7 +27,7 @@ robust-vessel-segmentation/
 
 Our model should be used with either v = 241 or v = 242, which can be set from the `run_segmentation.sh` script.
 
-The 241 model was trained using Z-score normalization. The 242 model was trained with nnUNet's CT normalization. In our experience, the 241 model is more robust to variations in intensity distribution, but the 242 model is more robust to artifacts and distracting elements outside of the brain. We recommend using 241 when it can be guaranteed that the model's outputs can be post-processed to remove elements outside the brain via masking or if the presence of extraneous segmented objects is not a concern.
+The 241 model was trained using Z-score normalization. The 242 model was trained with nnUNet's CT normalization. In our experience, the 241 model is more robust to variations in intensity distribution, but the 242 model is more robust to artifacts and distracting elements outside of the brain. We recommend using 241 when it can be guaranteed that the model's outputs can be post-processed to remove elements outside the brain via masking or if the presence of extraneous segmented objects is not a concern. We provide a way to use a head-neck ROI to mask out non-brain elements by switching from the 'Prediction' flag to 'Full', however, this can fail if the scan does not contain the full head.
 
 ## Running inference
 
