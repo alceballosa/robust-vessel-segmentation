@@ -4,3 +4,4 @@ pandas
 SimpleITK
 numpy
 tqdm
+nnunetv2

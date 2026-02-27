@@ -1,6 +1,6 @@
 # Robust brain vessel segmentation in 3D CTA using Dynamic 4D-CTA data
 
-This repository contains code for our paper on training robust vessel segmentation models using Dynamic 4D-CTA data. For now, we provide code for inference using models trained on TopCoW, VesselVerse, and our DynaVessel dataset, as well as evaluation scripts and visualization tools. The model trained on DynaVessel is subject to the specified license in the CC-BY-NC-SA 4.0 file; models trained on other datasets are subject to the licenses of those datasets.
+This repository contains code for our paper on training robust vessel segmentation models using Dynamic 4D-CTA data. For now, we provide code for inference using models trained on TopCoW, VesselVerse,gi. The models trained on DynaVessel are subject to the specified license in the CC-BY-NC-SA 4.0 file; models trained on other datasets are subject to the licenses of those datasets.
 
 We aim to release the training and evaluation partitions of DynaVessel in the short term, but it depends obtaining institutional approval from the hospital network from which we sourced the data.
 
@@ -13,7 +13,7 @@ Robust automatic brain vessel segmentation in 3D CTA scans using dynamic 4D-CTA 
 
 ## Setting up weights and other required files
 
-Please download the pretrained models, registration templates, and the Linux executable of ANTS from Google Drive: [link](https://drive.google.com/open?id=1uFTrSajk2oAx4LHctZB_0cg98Ubo1QJ-&usp=drive_fs)
+To run inference on any 3D CTA scan of the head, please download the pretrained models, registration templates, and the Linux executable of ANTS from Google Drive: [URL](https://drive.google.com/open?id=1uFTrSajk2oAx4LHctZB_0cg98Ubo1QJ-&usp=drive_fs)
 
 The folder structure should be:
 
@@ -40,3 +40,5 @@ bash run_segmentation.sh <input_folder> <output_folder> <num_gpus>
 The pipeline will automatically use the specified number of GPUs to process the scans in parallel. The output will be saved in the specified output folder.
 
 (More detailed instructions will be posted after the MICCAI deadline on Feb 26, apologies!)
+
+

@@ -441,12 +441,6 @@ def main():
     try:
         log_to_queue(log_queue, "Setting environment variables.")
         os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = "10"
-        # os.environ["nnUNet_raw"] = (
-        # "/projects/vig/Datasets/aneurysm/vessel_segm/nnUNet_raw"
-        # )
-        # os.environ["nnUNet_preprocessed"] = (
-        # "/projects/vig/Datasets/aneurysm/vessel_segm/nnUNet_preprocessed"
-        # )
         os.environ["nnUNet_results"] = str(
             REPO_ROOT / "atlases_and_weights" / "weights"
         )
