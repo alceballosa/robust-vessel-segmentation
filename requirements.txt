@@ -5,3 +5,6 @@ SimpleITK
 numpy
 tqdm
 nnunetv2
+scipy
+tqdm
+simpleitk
