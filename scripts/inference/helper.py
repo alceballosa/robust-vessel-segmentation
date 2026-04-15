@@ -96,33 +96,91 @@ def mask_volumes(mask_vol, data_vol, output_vol):
     nib.save(masked_img, output_vol)
 
 
-def gather_nifti_data(root_directory):
-    data = []
+def _strip_channel_suffix(filename):
+    """Strip nnUNet channel suffix (_0000, _0001, ...) from a filename stem."""
+    import re
+    stem = filename.replace(".nii.gz", "")
+    m = re.match(r'^(.+)_(\d{4})$', stem)
+    if m:
+        return m.group(1), int(m.group(2))
+    return stem, None
+
+
+def gather_nifti_data(root_directory, multichannel=False):
+    if not multichannel:
+        data = []
+        for dirpath, dirnames, filenames in os.walk(root_directory):
+            for filename in filenames:
+                if filename.endswith(".nii.gz"):
+                    file_path = str(Path(dirpath) / filename)
+                    nifti_img = nib.load(file_path)
+                    data.append(
+                        {
+                            "patientID": Path(dirpath).name,
+                            "file_name": filename,
+                            "dimensions": nifti_img.shape,
+                            "file_path": file_path,
+                            "num_channels": 1,
+                            "channel_paths": file_path,
+                            "XRayExposure": extract_field_from_sidecar(
+                                file_path, "XRayExposure"
+                            ),
+                            "AcquisitionTime": extract_field_from_sidecar(
+                                file_path, "AcquisitionTime"
+                            ),
+                            "SeriesDescription": extract_field_from_sidecar(
+                                file_path, "SeriesDescription"
+                            ),
+                            "AcquisitionNumber": extract_field_from_sidecar(
+                                file_path, "AcquisitionNumber"
+                            ),
+                        }
+                    )
+        return pd.DataFrame(data)
+
+    # Multichannel: group files by scan name (stripping _0000/_0001 suffix)
+    scan_channels = {}  # scan_stem -> {channel_idx: file_path}
+    scan_dirs = {}
     for dirpath, dirnames, filenames in os.walk(root_directory):
         for filename in filenames:
             if filename.endswith(".nii.gz"):
                 file_path = str(Path(dirpath) / filename)
-                nifti_img = nib.load(file_path)
-                data.append(
-                    {
-                        "patientID": Path(dirpath).name,
-                        "file_name": filename,
-                        "dimensions": nifti_img.shape,
-                        "file_path": file_path,
-                        "XRayExposure": extract_field_from_sidecar(
-                            file_path, "XRayExposure"
-                        ),
-                        "AcquisitionTime": extract_field_from_sidecar(
-                            file_path, "AcquisitionTime"
-                        ),
-                        "SeriesDescription": extract_field_from_sidecar(
-                            file_path, "SeriesDescription"
-                        ),
-                        "AcquisitionNumber": extract_field_from_sidecar(
-                            file_path, "AcquisitionNumber"
-                        ),
-                    }
-                )
+                scan_stem, ch_idx = _strip_channel_suffix(filename)
+                if ch_idx is None:
+                    # No channel suffix — treat as single-channel scan
+                    scan_channels.setdefault(scan_stem, {})[0] = file_path
+                else:
+                    scan_channels.setdefault(scan_stem, {})[ch_idx] = file_path
+                scan_dirs[scan_stem] = dirpath
+
+    data = []
+    for scan_stem, channels in scan_channels.items():
+        sorted_chs = sorted(channels.keys())
+        ch_paths = [channels[ch] for ch in sorted_chs]
+        primary_path = ch_paths[0]
+        nifti_img = nib.load(primary_path)
+        data.append(
+            {
+                "patientID": Path(scan_dirs[scan_stem]).name,
+                "file_name": f"{scan_stem}.nii.gz",
+                "dimensions": nifti_img.shape,
+                "file_path": primary_path,
+                "num_channels": len(ch_paths),
+                "channel_paths": ";".join(ch_paths),
+                "XRayExposure": extract_field_from_sidecar(
+                    primary_path, "XRayExposure"
+                ),
+                "AcquisitionTime": extract_field_from_sidecar(
+                    primary_path, "AcquisitionTime"
+                ),
+                "SeriesDescription": extract_field_from_sidecar(
+                    primary_path, "SeriesDescription"
+                ),
+                "AcquisitionNumber": extract_field_from_sidecar(
+                    primary_path, "AcquisitionNumber"
+                ),
+            }
+        )
     return pd.DataFrame(data)
 
 
@@ -259,6 +317,29 @@ def mask_and_resample_images(
         raise
 
 
+def mask_and_resample_images_multichannel(
+    output_warp_roi, channel_paths, analysis_dir, cta_roi_iso_channels, log_queue, mask=True
+):
+    """Resample all channels to isotropic. Registration/masking uses channel 0 only."""
+    try:
+        for i, (ch_path, ch_iso_path) in enumerate(zip(channel_paths, cta_roi_iso_channels)):
+            if mask and output_warp_roi is not None and i == 0:
+                cta_roi = f"{analysis_dir}{Path(ch_path).stem.replace('.nii', '')}_cta_inference.nii.gz"
+                log_to_queue(log_queue, f"Masking channel {i}: {ch_path} with ROI.")
+                mask_volumes(output_warp_roi, ch_path, cta_roi)
+            else:
+                cta_roi = ch_path
+            log_to_queue(log_queue, f"Resampling channel {i} to isotropic: {ch_path}")
+            nifti_isotropic(cta_roi, ch_iso_path, min_spacing=0.468)
+    except Exception as e:
+        log_to_queue(
+            log_queue,
+            f"Error during multichannel masking and resampling: {e}",
+            level=logging.ERROR,
+        )
+        raise
+
+
 def process_row_registration(row, log_queue):
     try:
         cta_name = row["file_name"]
@@ -273,11 +354,24 @@ def process_row_registration(row, log_queue):
         cta_roi = f"{analysis_dir}{cta_name}_cta_inference.nii.gz"
         cta_roi_iso = row["cta_roi_iso"]
 
+        num_channels = row.get("num_channels", 1)
+        is_multichannel = num_channels > 1
+
+        if is_multichannel:
+            channel_paths = row["channel_paths"].split(";")
+            cta_roi_iso_channels = row["cta_roi_iso_channels"].split(";")
+
         if row["mode"] == "Prediction":
-            log_to_queue(log_queue, f"Resampling CTA {cta_name} into {cta_roi_iso}.")
-            mask_and_resample_images(
-                None, cta_path, cta_roi, cta_roi_iso, log_queue, mask=False
-            )
+            if is_multichannel:
+                log_to_queue(log_queue, f"Resampling {num_channels} channels for {cta_name}.")
+                mask_and_resample_images_multichannel(
+                    None, channel_paths, analysis_dir, cta_roi_iso_channels, log_queue, mask=False
+                )
+            else:
+                log_to_queue(log_queue, f"Resampling CTA {cta_name} into {cta_roi_iso}.")
+                mask_and_resample_images(
+                    None, cta_path, cta_roi, cta_roi_iso, log_queue, mask=False
+                )
             return 60, None
         else:
             log_to_queue(log_queue, f"Registering {cta_name}")
@@ -291,9 +385,14 @@ def process_row_registration(row, log_queue):
             )
 
             log_to_queue(log_queue, "Masking CTA image and resampling.")
-            mask_and_resample_images(
-                output_warp_roi, cta_path, cta_roi, cta_roi_iso, log_queue
-            )
+            if is_multichannel:
+                mask_and_resample_images_multichannel(
+                    output_warp_roi, channel_paths, analysis_dir, cta_roi_iso_channels, log_queue
+                )
+            else:
+                mask_and_resample_images(
+                    output_warp_roi, cta_path, cta_roi, cta_roi_iso, log_queue
+                )
 
         return elapsed_time, affine_matrix
     except Exception as e:
@@ -372,6 +471,25 @@ def update_input_dataframe_fields(
         df["cta_predicted"] = df.apply(
             lambda row: f"{row['inferenceOutDir']}{row['file_name']}.nii.gz", axis=1
         )
+
+        # For multichannel: generate internal names for all channels
+        if "num_channels" not in df.columns:
+            df["num_channels"] = 1
+            df["channel_paths"] = df["file_path"]
+
+        def _build_channel_iso_paths(row):
+            n_ch = row.get("num_channels", 1)
+            idx = row.name  # DataFrame index
+            if n_ch <= 1:
+                return row["cta_roi_iso"]
+            # semicolon-separated list of isotropic paths for each channel
+            return ";".join(
+                f"{row['inferenceDir']}CA_{idx:05d}_{ch:04d}.nii.gz"
+                for ch in range(n_ch)
+            )
+
+        df["cta_roi_iso_channels"] = df.apply(_build_channel_iso_paths, axis=1)
+
     except Exception as e:
         log_to_queue(
             log_queue, "Error updating input dataframe fields.", level=logging.ERROR

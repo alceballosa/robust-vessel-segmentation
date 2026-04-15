@@ -136,6 +136,12 @@ def parse_arguments():
         default=False,
         help="Use batch processing mode (all scans at once). Default is sequential mode with resumability.",
     )
+    parser.add_argument(
+        "--multichannel",
+        action="store_true",
+        default=False,
+        help="Multichannel mode: group _0000/_0001/... files as channels of a single scan.",
+    )
 
     return parser.parse_args()
 
@@ -272,7 +278,11 @@ def run_pipeline_sequential(
     log_to_queue(log_queue, f"GPU {gpu_id}: processing {len(df)} scans.")
 
     for _, row in tqdm(df.iterrows(), total=len(df), desc=f"GPU {gpu_id}", position=gpu_id):
-        scan_name = Path(row["file_path"]).stem.replace(".nii", "")
+        # Use file_name if available (handles multichannel grouping), else derive from path
+        if "file_name" in row and pd.notna(row["file_name"]):
+            scan_name = row["file_name"].replace(".nii.gz", "").replace(".nii", "")
+        else:
+            scan_name = Path(row["file_path"]).stem.replace(".nii", "")
 
         # Check if output already exists
         if mode == "ROI":
@@ -294,7 +304,11 @@ def run_pipeline_sequential(
         )
 
         # Build a 1-row DataFrame for this scan
-        scan_df = pd.DataFrame([{"file_path": row["file_path"]}])
+        scan_row_dict = {"file_path": row["file_path"]}
+        if "num_channels" in row:
+            scan_row_dict["num_channels"] = row["num_channels"]
+            scan_row_dict["channel_paths"] = row["channel_paths"]
+        scan_df = pd.DataFrame([scan_row_dict])
         scan_df = update_input_dataframe_fields(
             scan_df,
             str(temp_path),
@@ -492,8 +506,11 @@ def main():
             df = process_csv(args.csv)
         elif args.directory:
             log_to_queue(log_queue, "Processing data from: " + args.directory)
-            df = gather_nifti_data(args.directory)
-            log_to_queue(log_queue, f"Found {len(df)} files.")
+            df = gather_nifti_data(args.directory, multichannel=args.multichannel)
+            if args.multichannel:
+                log_to_queue(log_queue, f"Found {len(df)} scans (multichannel mode).")
+            else:
+                log_to_queue(log_queue, f"Found {len(df)} files.")
 
         if args.batch:
             log_to_queue(log_queue, "Running in batch mode.")
