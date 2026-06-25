@@ -2,6 +2,8 @@
 
 This repository contains code for our paper on training robust vessel segmentation models using Dynamic 4D-CTA data. For now, we provide code for inference using models trained on TopCoW, VesselVerse,gi. The models trained on DynaVessel are subject to the specified license in the CC-BY-NC-SA 4.0 file; models trained on other datasets are subject to the licenses of those datasets.
 
+## Dataset access
+
 To access the training and evaluation partitions of DynaVessel, please email a request (including affiliations and intended use for the data) to us through ceballosarroyo.a@northeastern.edu while CC'ing Dr. Geoffrey Young at gsyoung@bwh.harvard.edu. This is necessary as our IRB requires us to keep track of researchers who access the dataset.
 
 ## Citing us
