@@ -1,17 +1,26 @@
-# Robust brain vessel segmentation in 3D CTA using Dynamic 4D-CTA data
+# Robust brain vessel segmentation in 3D CTA using Dynamic 4D-CTA data \& Scaling up fine-grained intracranial vessel annotations in computed tomography angiography
 
-This repository contains code for our paper on training robust vessel segmentation models using Dynamic 4D-CTA data. For now, we provide code for inference using models trained on TopCoW, VesselVerse,gi. The models trained on DynaVessel are subject to the specified license in the CC-BY-NC-SA 4.0 file; models trained on other datasets are subject to the licenses of those datasets.
+!! NEWS: Our work has been accepted to MICCAI 2026 and MLHC 2026, see you in Strasbourg and Baltimore! 
+
+This repository covers our two papers on training robust vessel segmentation models using Dynamic 4D-CTA data. We provide code for inference using models trained on TopCoW, VesselVerse, and DynaVessel. The models trained on DynaVessel are subject to the specified license in the CC-BY-NC-SA 4.0 file; models trained on other datasets are subject to the licenses of those datasets. Code for pre-processing data and training/running models on our SemanticVessel dataset will be released shortly.
+
 
 ## Dataset access
 
-To access the training and evaluation partitions of DynaVessel, please email a request (including affiliations and intended use for the data) to us through ceballosarroyo.a@northeastern.edu while CC'ing Dr. Geoffrey Young at gsyoung@bwh.harvard.edu. This is necessary as our IRB requires us to keep track of researchers who access the dataset.
+To access DynaVessel (around 100 scans with artery, vein labels) and SemanticVessel (around 360 scans with vein and 20 artery labels), please email a request to us through ceballosarroyo.a@northeastern.edu while CC'ing Dr. Geoffrey Young at gsyoung@bwh.harvard.edu. This is necessary as our IRB requires us to keep track of researchers who access the dataset.
+
+In your request, please include your name, affiliation, and a brief description of your research project.
 
 ## Citing us
 
-If you find our work useful, please cite our preprint:
+If you find our DynaVessel dataset and pre-trained models, please cite our preprint:
 
 Alberto Mario Ceballos-Arroyo, Shrikanth M. Yadav, Chu-Hsuan Lin, Jisoo Kim, Geoffrey S. Young, Lei Qin, Huaizu Jiang. 2026.
 Robust automatic brain vessel segmentation in 3D CTA scans using dynamic 4D-CTA data. <https://arxiv.org/abs/2602.00391>
+
+If you use our SemanticVessel dataset, please also cite:
+
+Chu-Hsuan Lin, Alberto Mario Ceballos-Arroyo, Jisoo Kim, Shrikanth M. Yadav, Huaizu Jiang, Lei Qin, Geoffrey S. Young. <https://arxiv.org/abs/2606.21756>
 
 ## Setting up weights and other required files
 
@@ -40,7 +49,3 @@ bash run_segmentation.sh <input_folder> <output_folder> <num_gpus>
 ```
 
 The pipeline will automatically use the specified number of GPUs to process the scans in parallel. The output will be saved in the specified output folder.
-
-
-
-
